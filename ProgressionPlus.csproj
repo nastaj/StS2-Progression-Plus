@@ -64,11 +64,9 @@
         <Compile Remove="ProgressionPlus\**"/>
         <Compile Remove="materials\**"/>
         <Compile Remove="shaders\**"/>
-        <Compile Remove="images\**"/>
         <EmbeddedResource Remove="ProgressionPlus\**"/>
         <EmbeddedResource Remove="materials\**"/>
         <EmbeddedResource Remove="shaders\**"/>
-        <EmbeddedResource Remove="images\**"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -83,6 +81,10 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="images\ui\score_icon.png" />
     </ItemGroup>
 
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">

@@ -12,6 +12,8 @@ public static class Score
     private const string ScoreIconName = "ScoreIcon";
     private const string ScoreLabelName = "ScoreLabel";
     private const string ScoreIconPath = "res://images/ui/score_icon.png";
+    private const float ScoreIconYOffset = 8.0f;
+    private const float ScoreLabelYOffset = 0.0f;
     private static readonly Vector2 ScoreOffset = new(12.0f, 0.0f);
     private static readonly Vector2 ScoreIconSize = new(32.0f, 32.0f);
 
@@ -88,18 +90,21 @@ public static class Score
         };
 
         scoreRoot.AddChild(scoreIcon);
-        scoreIcon.Position = new Vector2(0.0f, Mathf.Max(0.0f, (topBar.BossIcon.Size.Y - ScoreIconSize.Y) * 0.5f));
+        scoreIcon.Position = new Vector2(
+            0.0f,
+            Mathf.Max(0.0f, (topBar.BossIcon.Size.Y - ScoreIconSize.Y) * 0.5f) + ScoreIconYOffset
+        );
 
         var label = CreateStyledScoreLabel(topBar);
         scoreRoot.AddChild(label);
-        label.Position = new Vector2(ScoreIconSize.X + 6.0f, 0.0f);
+        label.Position = new Vector2(ScoreIconSize.X + 14.0f, ScoreLabelYOffset);
 
         RepositionScoreUi(topBar, scoreRoot);
     }
 
     private static MegaLabel CreateStyledScoreLabel(NTopBar topBar)
     {
-        var templateLabel = topBar.Gold.GetNodeOrNull<MegaLabel>((NodePath)"%GoldLabel");
+        var templateLabel = topBar.FloorIcon.GetNodeOrNull<MegaLabel>((NodePath)"%FloorNumLabel");
         MegaLabel label;
 
         if (templateLabel != null)
@@ -114,6 +119,8 @@ public static class Score
         label.Name = ScoreLabelName;
         label.MouseFilter = Control.MouseFilterEnum.Ignore;
         label.SetTextAutoSize("0");
+        // label.AddThemeColorOverride("font_color", Colors.White);
+        // label.AddThemeColorOverride("font_outline_color", Colors.Black);
         return label;
     }
 
@@ -154,7 +161,6 @@ public static class Score
 
     private static int GetCurrentScore()
     {
-        // Replace this with your real score source later.
         return 0;
     }
 }
