@@ -1,7 +1,10 @@
 ﻿using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
+using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.HoverTips;
 
 namespace ProgressionPlus.Patches;
 
@@ -16,6 +19,13 @@ public static class Score
     private const float ScoreLabelYOffset = 0.0f;
     private static readonly Vector2 ScoreOffset = new(12.0f, 0.0f);
     private static readonly Vector2 ScoreIconSize = new(32.0f, 32.0f);
+    private static readonly HoverTip ScoreHoverTip = new(
+        new LocString("static_hover_tips", "SCORE.title"),
+        new LocString("static_hover_tips", "SCORE.description")
+    );
+
+    private static NTopBar? _currentTopBar;
+    private static bool _scoreChangedSubscribed;
 
     [HarmonyPatch(typeof(NTopBar), nameof(NTopBar._Ready))]
     private static class TopBarReadyPatch
@@ -23,6 +33,8 @@ public static class Score
         [HarmonyPostfix]
         private static void Postfix(NTopBar __instance)
         {
+            _currentTopBar = __instance;
+            EnsureScoreChangedSubscription();
             EnsureScoreUi(__instance);
             UpdateScoreUi(__instance);
         }
@@ -34,8 +46,21 @@ public static class Score
         [HarmonyPostfix]
         private static void Postfix(NTopBar __instance)
         {
+            _currentTopBar = __instance;
+            EnsureScoreChangedSubscription();
             EnsureScoreUi(__instance);
             UpdateScoreUi(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(NTopBar), nameof(NTopBar._ExitTree))]
+    private static class TopBarExitTreePatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(NTopBar __instance)
+        {
+            if (_currentTopBar == __instance)
+                _currentTopBar = null;
         }
     }
 
@@ -57,6 +82,23 @@ public static class Score
         }
     }
 
+    private static void EnsureScoreChangedSubscription()
+    {
+        if (_scoreChangedSubscribed)
+            return;
+
+        ScoreManager.ScoreChanged += OnScoreChanged;
+        _scoreChangedSubscribed = true;
+    }
+
+    private static void OnScoreChanged()
+    {
+        if (_currentTopBar == null || !GodotObject.IsInstanceValid(_currentTopBar))
+            return;
+
+        UpdateScoreUi(_currentTopBar);
+    }
+
     private static void EnsureScoreUi(NTopBar topBar)
     {
         if (!GodotObject.IsInstanceValid(topBar) || !GodotObject.IsInstanceValid(topBar.BossIcon))
@@ -73,9 +115,15 @@ public static class Score
         {
             Name = ScoreRootName,
             FocusMode = Control.FocusModeEnum.All,
-            MouseFilter = Control.MouseFilterEnum.Pass,
-            Size = new Vector2(140.0f, topBar.BossIcon.Size.Y)
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            Size = new Vector2(140.0f, topBar.BossIcon.Size.Y),
+            CustomMinimumSize = new Vector2(140.0f, topBar.BossIcon.Size.Y),
         };
+
+        scoreRoot.MouseEntered += () => ShowScoreHoverTip(scoreRoot);
+        scoreRoot.MouseExited += () => HideScoreHoverTip(scoreRoot);
+        scoreRoot.FocusEntered += () => ShowScoreHoverTip(scoreRoot);
+        scoreRoot.FocusExited += () => HideScoreHoverTip(scoreRoot);
 
         parent.AddChild(scoreRoot);
 
@@ -131,7 +179,6 @@ public static class Score
             return;
 
         RepositionScoreUi(topBar, scoreRoot);
-
         var scoreLabel = scoreRoot.GetNodeOrNull<MegaLabel>((NodePath)ScoreLabelName);
         if (scoreLabel != null)
             scoreLabel.SetTextAutoSize(GetCurrentScore().ToString());
@@ -152,6 +199,25 @@ public static class Score
         return parent?.GetNodeOrNull<Control>((NodePath)ScoreRootName);
     }
 
+    private static void ShowScoreHoverTip(Control scoreRoot)
+    {
+        if (!GodotObject.IsInstanceValid(scoreRoot))
+            return;
+
+        var anchor = scoreRoot.GetNodeOrNull<Control>((NodePath)ScoreIconName) ?? scoreRoot;
+
+        NHoverTipSet.CreateAndShow(scoreRoot, ScoreHoverTip).GlobalPosition =
+            anchor.GlobalPosition + new Vector2(0.0f, anchor.Size.Y + 20.0f);
+    }
+
+    private static void HideScoreHoverTip(Control scoreRoot)
+    {
+        if (!GodotObject.IsInstanceValid(scoreRoot))
+            return;
+
+        NHoverTipSet.Remove(scoreRoot);
+    }
+
     private static Texture2D? LoadScoreTexture()
     {
         return ResourceLoader.Exists(ScoreIconPath)
@@ -161,6 +227,6 @@ public static class Score
 
     private static int GetCurrentScore()
     {
-        return 0;
+        return ScoreManager.CurrentScore;
     }
 }
