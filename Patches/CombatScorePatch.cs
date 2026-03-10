@@ -1,7 +1,8 @@
 ﻿using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Rooms;
-using MegaCrit.Sts2.Core.Runs;
 
 namespace ProgressionPlus.Patches;
 
@@ -19,21 +20,23 @@ public static class CombatScorePatch
         if (runState?.CurrentRoom is not CombatRoom combatRoom)
             return;
 
+        Player player = LocalContext.GetMe(state);
+        var characterId = player.Character.Id.Entry;
         var actIndex = runState.CurrentActIndex;
         var ascensionLevel = runState.AscensionLevel;
 
         switch (combatRoom.RoomType)
         {
             case RoomType.Monster:
-                ScoreManager.AddRegularEncounterWin(actIndex, ascensionLevel);
+                EssenceManager.AddRegularCombatWin(characterId, actIndex, ascensionLevel);
                 break;
 
             case RoomType.Elite:
-                ScoreManager.AddEliteEncounterWin(actIndex, ascensionLevel);
+                EssenceManager.AddEliteCombatWin(characterId, actIndex, ascensionLevel);
                 break;
 
             case RoomType.Boss:
-                ScoreManager.AddBossEncounterWin(actIndex, ascensionLevel);
+                EssenceManager.AddBossCombatWin(characterId, actIndex, ascensionLevel);
                 break;
         }
     }

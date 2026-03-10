@@ -84,7 +84,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="images\ui\score_icon.png" />
+      <Content Include="images\ui\essence_icon.png" />
     </ItemGroup>
 
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">
