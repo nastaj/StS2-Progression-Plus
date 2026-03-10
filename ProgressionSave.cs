@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using Godot;
 using MegaCrit.Sts2.Core.Saves;
@@ -23,17 +22,19 @@ public static class ProgressionSave
 
             if (!File.Exists(path))
             {
-                EssenceManager.LoadFromSaveData(new ProgressionSaveData());
+                LoadEmpty();
                 return;
             }
 
             var json = File.ReadAllText(path);
             var data = JsonSerializer.Deserialize<ProgressionSaveData>(json) ?? new ProgressionSaveData();
-            EssenceManager.LoadFromSaveData(data);
+
+            EssenceManager.ImportSaveData(data.CharacterEssence);
+            UpgradeManager.ImportSaveData(data.CharacterUpgrades);
         }
         catch
         {
-            EssenceManager.LoadFromSaveData(new ProgressionSaveData());
+            LoadEmpty();
         }
     }
 
@@ -47,15 +48,25 @@ public static class ProgressionSave
             if (!string.IsNullOrWhiteSpace(directory))
                 Directory.CreateDirectory(directory);
 
-            var data = EssenceManager.ToSaveData();
-            var json = JsonSerializer.Serialize(data, SerializerOptions);
+            var data = new ProgressionSaveData
+            {
+                CharacterEssence = EssenceManager.ExportSaveData(),
+                CharacterUpgrades = UpgradeManager.ExportSaveData()
+            };
 
+            var json = JsonSerializer.Serialize(data, SerializerOptions);
             File.WriteAllText(path, json);
         }
         catch
         {
             // Intentionally swallow for now.
         }
+    }
+
+    private static void LoadEmpty()
+    {
+        EssenceManager.ImportSaveData(null);
+        UpgradeManager.ImportSaveData(null);
     }
 
     private static string GetGlobalProfileSavePath(string fileName)
