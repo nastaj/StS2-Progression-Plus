@@ -49,6 +49,8 @@ public static class EssenceManager
 
         var current = EssenceByCharacterId.GetValueOrDefault(characterId, 0);
         EssenceByCharacterId[characterId] = current + amount;
+        
+        ProgressionSave.Save();
 
         if (characterId == CurrentCharacterId)
             EssenceChanged?.Invoke();
@@ -60,9 +62,29 @@ public static class EssenceManager
             return;
 
         EssenceByCharacterId[characterId] = Math.Max(0, amount);
+        
+        ProgressionSave.Save();
 
         if (characterId == CurrentCharacterId)
             EssenceChanged?.Invoke();
+    }
+
+    public static ProgressionSaveData ToSaveData()
+    {
+        return new ProgressionSaveData()
+        {
+            CharacterEssence = new Dictionary<string, int>(EssenceByCharacterId)
+        };
+    }
+    
+    public static void LoadFromSaveData(ProgressionSaveData saveData)
+    {
+        EssenceByCharacterId.Clear();
+
+        foreach (var pair in saveData.CharacterEssence)
+            EssenceByCharacterId[pair.Key] = Math.Max(0, pair.Value);
+
+        EssenceChanged?.Invoke();
     }
 
     private static int CalculateEssenceGain(int basePoints, int actIndex, int ascensionLevel)
